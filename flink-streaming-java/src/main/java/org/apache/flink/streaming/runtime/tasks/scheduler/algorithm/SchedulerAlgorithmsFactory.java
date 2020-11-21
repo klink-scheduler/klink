@@ -21,17 +21,17 @@ public class SchedulerAlgorithmsFactory {
         if (schedulerPolicy == StreamTaskSchedulerPolicy.OS_SCHEDULER) {
             return new OSSchedulerAlgorithm(tasksListener, metricGroup, numOfCores);
         } else if (schedulerPolicy == StreamTaskSchedulerPolicy.ROUND_ROBIN) {
-            return new RoundRobinAlgorithm(tasksListener, metricGroup, numOfCores);
+    //        return new RoundRobinAlgorithm(tasksListener, metricGroup, numOfCores);
         } else if (schedulerPolicy == StreamTaskSchedulerPolicy.LONGEST_QUEUE_FIRST) {
-            return new LongestQueueFirstAlgorithm(tasksListener, metricGroup, numOfCores);
+    //        return new LongestQueueFirstAlgorithm(tasksListener, metricGroup, numOfCores);
         } else if (schedulerPolicy == StreamTaskSchedulerPolicy.RATE_BASED) {
-            return new RateBasedAlgorithm(tasksListener, metricGroup, numOfCores);
+     //       return new RateBasedAlgorithm(tasksListener, metricGroup, numOfCores);
         } else if (schedulerPolicy == StreamTaskSchedulerPolicy.SHORTEST_REMAINING_PROCESSING_TIME) {
-            return new ShortestRemainingProcessingTimeAlgorithm(tasksListener, metricGroup, numOfCores);
-        } else if (schedulerPolicy == StreamTaskSchedulerPolicy.SEWPA) {
-            return new ShortestEmittingWatermarkProcessingAlgorithm(tasksListener, metricGroup, numOfCores);
+     //       return new ShortestRemainingProcessingTimeAlgorithm(tasksListener, metricGroup, numOfCores);
+        } else if (schedulerPolicy == StreamTaskSchedulerPolicy.KLINK) {
+            return new Klink(tasksListener, metricGroup, numOfCores);
         } else if (schedulerPolicy == StreamTaskSchedulerPolicy.FIRST_COME_FIRST_SERVED) {
-            return new FirstComeFirstServeAlgorithm(tasksListener, metricGroup, numOfCores);
+     //       return new FirstComeFirstServeAlgorithm(tasksListener, metricGroup, numOfCores);
         }
         return null;
     }

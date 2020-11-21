@@ -11,16 +11,21 @@ import org.apache.flink.streaming.runtime.tasks.StreamTask;
 import org.apache.flink.streaming.runtime.tasks.scheduler.SchedulerMonitor;
 import org.apache.flink.streaming.runtime.tasks.scheduler.StreamTasksListener;
 import org.apache.flink.streaming.runtime.tasks.scheduler.collectors.RecordsCountCollector;
+import org.apache.flink.streaming.runtime.tasks.scheduler.diststore.DistStoreManager;
+import org.apache.flink.streaming.runtime.tasks.scheduler.diststore.NetDelaySSStore;
+import org.apache.flink.streaming.runtime.tasks.scheduler.diststore.WindowDistStore;
 
 import java.util.*;
 
-public class ShortestEmittingWatermarkProcessingAlgorithm extends AbstractPriorityAlgorithm {
+public class Klink extends AbstractPriorityAlgorithm {
 
     private final Map<StreamTask, WindowOperator> taskToWindowTask;
+    private final DistStoreManager distStoreManager;
 
-    ShortestEmittingWatermarkProcessingAlgorithm(StreamTasksListener tasksListener, TaskSchedulerMetricGroup metricGroup, int numOfCores) {
+    Klink(StreamTasksListener tasksListener, TaskSchedulerMetricGroup metricGroup, int numOfCores) {
         super(tasksListener, metricGroup, numOfCores, false);
         this.taskToWindowTask = new HashMap<>(4);
+        this.distStoreManager = new DistStoreManager(DistStoreManager.DistStoreType.NET_DELAY);
     }
 
     /* Associate Each Task to the WindowOperator. */
@@ -43,6 +48,7 @@ public class ShortestEmittingWatermarkProcessingAlgorithm extends AbstractPriori
 
                 if (currTask.getHeadOperator() instanceof WindowOperator) {
                     // We found the window, now build association.
+                    distStoreManager.createWindowDistStore((WindowOperator) currTask.getHeadOperator());
                     while (!tasksQueue.isEmpty()) {
                         taskToWindowTask.put(tasksQueue.poll(), (WindowOperator) currTask.getHeadOperator());
                     }
@@ -68,7 +74,7 @@ public class ShortestEmittingWatermarkProcessingAlgorithm extends AbstractPriori
              * one window is overdue and thus should be given utmost priority.
              *
              * If the watermarks in the pipeline are associated with a window, each operator is given
-             * the priority of 1 / (maxTimestamp - maxWatermark). The closer it is to the window boundary
+             * the priority discussed in the paper. The closer it is to the window boundary
              * the higher the priority.
              * To some extent, we would be scheduling paths here so we should take other factors into consideration
              * like starvation. However, starvation alone is not enough as all operators int he same path
@@ -125,18 +131,6 @@ public class ShortestEmittingWatermarkProcessingAlgorithm extends AbstractPriori
                 prevWatermark = watermark;
             }
 
-            /*
-             * The priorities are assigned as follows:
-             * <ul>
-             *  <li> Case 1: If the operator does not have the largest window, assign it highest priority,
-             *      as this signifies that there is a window overdue and the watermark is in the pipeline.</li>
-             *  <li> Case 2: If the operator does have the largest window, assign the priority as
-             *      1 / (maxTimestamp - maxWatermark).</li>
-             *  <li> Case 3: If the operator is at the end of the pipeline, assign it high priority since these
-             *      tuples are critical for slowdown and latency.</li>
-             * </ul>
-             */
-
             currTask = sinkTask;
             while (currTask != null) {
                 // Ignore source operators
@@ -151,10 +145,6 @@ public class ShortestEmittingWatermarkProcessingAlgorithm extends AbstractPriori
                     priority = Integer.MAX_VALUE;
                     // Case 3
                 } else if (window == null) {
-                    /*
-                     * This should only be triggered by operators that exist
-                     * beyond a window operator
-                     */
                     priority = 0;
                     // Case 2
                 } else if (!window.equals(largestWindow)) {
@@ -163,7 +153,7 @@ public class ShortestEmittingWatermarkProcessingAlgorithm extends AbstractPriori
                 } else {
                     // minimize watermark difference / starvation
                     priority = (window.maxTimestamp() - largestWatermark) /
-                            (1.0 * (cycleNumber - lastTaskCycle.get(currTask)));
+                            (1.0 * (cycleNumber - lastTaskCycle.get(currTask)) - distStoreManager.getMeanDelay());
                 }
                 taskPriorities.put(currTask, priority);
                 currTask = getPredecessor(currTask);

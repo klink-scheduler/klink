@@ -6,7 +6,7 @@ public enum StreamTaskSchedulerPolicy {
     LONGEST_QUEUE_FIRST("LONGEST_QUEUE_FIRST"),
     SHORTEST_REMAINING_PROCESSING_TIME("SHORTEST_REMAINING_PROCESSING_TIME"),
     RATE_BASED("RATE_BASED"),
-    SEWPA("SEWPA"),
+    KLINK("KLINK"),
     FIRST_COME_FIRST_SERVED("FCFS");
 
     /* Unique identifier for each policy */
