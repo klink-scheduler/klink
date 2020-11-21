@@ -1,0 +1,32 @@
+README
+This is a project repository for Klink v0.1.
+
+In contrast to a thread-based execution model where each incoming event is allocated a thread,
+Aurora and Borealis \use a state-based execution model for its runtime scheduler.
+Specifically, a single scheduler thread that tracks system state is deployed to orchestrate the execution of threads.
+In this design, each operator instance is mapped to a thread. The scheduler design adopted by these two systems
+showed that state-based schedulers are better suited for  SPEs than thread-based schedulers. Thus, we integrated a
+state-based scheduler infrastructure into Flink to maximize efficiency.
+
+Flink is divided into two main integral components: Runtime and streaming-layer. Klink modified the two layers to
+implement a Runtime scheduler.
+
+Runtime:
+---
+The changes on the runtime layer entail registering all Tasks (or AbstractInvokable) with a newly built component,
+that is, the RuntimeScheduler. Specifically, under flink-runtime/taskexecutor/scheduler, one can find a new module built
+for a runtime scheduler. The scheduler, initially launched before any other tasks, and through carefully curating it to
+avoid race conditions, intercepts the creation of other Tasks. Each task is formally registered, which allows us to
+toggle control of each thread, as well as collect the necessary runtime information. The scheduler is then
+converted into a streaming scheduler in the streaming layer. Note that the design is extendable to support batching.
+
+
+Streaming:
+---
+The scheduler of Streaming layer can be found in flink-streaming-java/streaming/runtime/tasks/scheduler is invoked by
+the Runtime scheduler. Specifically, all Tasks registered with the runtime scheduler are sent to the streaming scheduler
+that converts the AbstractInvokables to their respective type of operators. The type of the scheduler is then specified when
+specifying the query by the end user. Th efactory then creates the right instance of the scheduler.
+
+Klink scheduler is fond in the algorithm module, attached with the "DistStore", which holds ifnormation about the network delay
+as well as the interevent generation delays.
