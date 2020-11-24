@@ -21,7 +21,7 @@ The scheduler, initially launched before any other tasks, and through carefully 
 ### Streaming layer
 The streaming layer scheduler can be found in `flink-streaming-java/streaming/runtime/tasks/scheduler`. The scheduler is invoked by the Runtime scheduler. Specifically, all Tasks registered with the runtime scheduler are sent to the streaming scheduler that converts the `AbstractInvokables` to their respective type of operators. The type of the scheduler is then specified when specifying the query by the end user. The factory then creates the right instance of the scheduler.
 
-Klink scheduler is fond in the algorithm module, attached with the `DistStore`, which holds information about the network delay as well as the inter-event generation delays.
+Klink scheduler is found in the algorithm module, attached with the `DistStore`, which holds information about the network delay as well as the inter-event generation delays.
 
 ## Installation
 ### Unix
